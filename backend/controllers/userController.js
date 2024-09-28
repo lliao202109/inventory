@@ -131,7 +131,7 @@ const getUser = asyncHandler(async (req, res) => {
 // Get login status
 const loginStatus = asyncHandler(async (req, res) => {
     const token = req.cookies.token
-    if (!token){
+    if (!token) {
         return res.json(false)
     }
 
@@ -147,22 +147,50 @@ const loginStatus = asyncHandler(async (req, res) => {
 // Update User
 const updateUser = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
-  
+
     if (user) {
-      const { name, email, photo, phone, bio } = user;
-      user.email = email;
-      user.name = req.body.name || name;
-      user.phone = req.body.phone || phone;
-      user.bio = req.body.bio || bio;
-      user.photo = req.body.photo || photo;
-  
-      const updatedUser = await user.save();
-      res.status(200).json(updatedUser);
+        const { name, email, photo, phone, bio } = user;
+        user.email = email;
+        user.name = req.body.name || name;
+        user.phone = req.body.phone || phone;
+        user.bio = req.body.bio || bio;
+        user.photo = req.body.photo || photo;
+
+        const updatedUser = await user.save();
+        res.status(200).json(updatedUser);
     } else {
-      res.status(404);
-      throw new Error("User not found");
+        res.status(404);
+        throw new Error("User not found");
     }
-  })
+})
+
+const changePassword = asyncHandler(async (req, res) => {
+    user = await User.findById(req.user._id)
+    const { oldPassword, password } = req.body
+
+    if (!user) {
+        res.status(400)
+        throw new Error('User not found')
+    }
+
+    //Validate
+    if (!oldPassword || !password) {
+        res.status(400)
+        throw new Error("Please add old and new password")
+    }
+
+    // Check if old password matches password in DB 
+    const isOldPasswordCorrect = await bcrypt.compare(oldPassword, user.password)
+
+    if (user && isOldPasswordCorrect) {
+        user.password = password
+        await user.save()
+        res.status(200).send('Password changed successfully')
+    } else {
+        res.status(400)
+        throw new Error('The old password is not right')
+    }
+})
 
 module.exports = {
     registerUser,
@@ -170,5 +198,6 @@ module.exports = {
     logoutUser,
     getUser,
     loginStatus,
-    updateUser
+    updateUser,
+    changePassword
 }
